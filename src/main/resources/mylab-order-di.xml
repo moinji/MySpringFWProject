@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!-- Product Bean 정의 -->
+    <bean id="product1" class="mylab.order.di.xml.Product">
+        <constructor-arg value="P001"/>
+        <constructor-arg value="노트북"/>
+        <constructor-arg value="800000.0"/>
+    </bean>
+
+    <bean id="product2" class="mylab.order.di.xml.Product">
+        <constructor-arg value="P002"/>
+        <constructor-arg value="스마트폰"/>
+        <constructor-arg value="150000.0"/>
+    </bean>
+
+    <!-- ShoppingCart Bean 정의 -->
+    <bean id="shoppingCart" class="mylab.order.di.xml.ShoppingCart">
+        <property name="products">
+            <list>
+                <ref bean="product1"/>
+                <ref bean="product2"/>
+            </list>
+        </property>
+    </bean>
+
+    <!-- OrderService Bean 정의 (Setter 기반 DI) -->
+    <bean id="orderService" class="mylab.order.di.xml.OrderService">
+        <property name="shoppingCart" ref="shoppingCart"/>
+    </bean>
+
+</beans>
