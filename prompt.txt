@@ -1,0 +1,154 @@
+목표
+
+이메일/문자 알림 서비스를 자바 설정(NotificationConfig)으로 구성
+
+NotificationManager가 두 서비스를 주입 받아 동작
+
+테스트(NotificationConfigTest)로 DI와 값 검증
+
+프로젝트 조건
+
+Java 8 이상, Spring 5.x, JUnit 4
+
+패키지
+
+서비스/매니저: mylab.notification.di.annot
+
+자바 설정/테스트: mylab.notification.di.annot.config
+
+A) 인터페이스/구현/매니저 (필요 시 그대로 생성해서 사용)
+
+/// 파일: src/main/java/mylab/notification/di/annot/NotificationService.java
+package mylab.notification.di.annot;
+public interface NotificationService {
+void sendNotification(String message);
+}
+
+/// 파일: src/main/java/mylab/notification/di/annot/EmailNotificationService.java
+package mylab.notification.di.annot;
+public class EmailNotificationService implements NotificationService {
+private String smtpServer;
+private int port;
+public EmailNotificationService(String smtpServer, int port) {
+this.smtpServer = smtpServer; this.port = port;
+}
+public String getSmtpServer() { return smtpServer; }
+public int getPort() { return port; }
+@Override
+public void sendNotification(String message) {
+System.out.println("이메일 알림 전송: " + message + " (서버: " + smtpServer + ":" + port + ")");
+}
+}
+
+/// 파일: src/main/java/mylab/notification/di/annot/SmsNotificationService.java
+package mylab.notification.di.annot;
+public class SmsNotificationService implements NotificationService {
+private String provider;
+public SmsNotificationService(String provider) { this.provider = provider; }
+public String getProvider() { return provider; }
+@Override
+public void sendNotification(String message) {
+System.out.println("SMS 알림 전송: " + message + " (제공업체: " + provider + ")");
+}
+}
+
+/// 파일: src/main/java/mylab/notification/di/annot/NotificationManager.java
+package mylab.notification.di.annot;
+public class NotificationManager {
+private NotificationService emailService;
+private NotificationService smsService;
+public NotificationManager(NotificationService emailService, NotificationService smsService) {
+this.emailService = emailService; this.smsService = smsService;
+}
+public NotificationService getEmailService() { return emailService; }
+public NotificationService getSmsService() { return smsService; }
+public void sendNotificationByEmail(String message) { emailService.sendNotification(message); }
+public void sendNotificationBySms(String message) { smsService.sendNotification(message); }
+}
+
+B) 자바 설정(빈 정의) — @Configuration + @Bean
+
+/// 파일: src/main/java/mylab/notification/di/annot/config/NotificationConfig.java
+package mylab.notification.di.annot.config;
+
+import mylab.notification.di.annot.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class NotificationConfig {
+
+@Bean
+public EmailNotificationService emailNotificationService() {
+    return new EmailNotificationService("smtp.gmail.com", 587);
+}
+
+@Bean
+public SmsNotificationService smsNotificationService() {
+    return new SmsNotificationService("SKT");
+}
+
+@Bean
+public NotificationManager notificationManager() {
+    return new NotificationManager(emailNotificationService(), smsNotificationService());
+}
+
+
+}
+
+C) 테스트 — DI 동작/값 검증/메서드 실행
+
+/// 파일: src/test/java/mylab/notification/di/annot/config/NotificationConfigTest.java
+package mylab.notification.di.annot.config;
+
+import mylab.notification.di.annot.;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import static org.junit.Assert.;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(classes = NotificationConfig.class)
+public class NotificationConfigTest {
+
+@Autowired
+private NotificationManager notificationManager;
+
+@Test
+public void manager_not_null() {
+    assertNotNull(notificationManager);
+}
+
+@Test
+public void email_service_injected_and_values() {
+    assertNotNull(notificationManager.getEmailService());
+    EmailNotificationService email = (EmailNotificationService) notificationManager.getEmailService();
+    assertEquals("smtp.gmail.com", email.getSmtpServer());
+    assertEquals(587, email.getPort());
+}
+
+@Test
+public void sms_service_injected_and_values() {
+    assertNotNull(notificationManager.getSmsService());
+    SmsNotificationService sms = (SmsNotificationService) notificationManager.getSmsService();
+    assertEquals("SKT", sms.getProvider());
+}
+
+@Test
+public void send_methods_execute() {
+    notificationManager.sendNotificationByEmail("테스트 이메일");
+    notificationManager.sendNotificationBySms("테스트 SMS");
+}
+
+
+}
+
+D) 체크리스트
+
+패키지 경로 정확히 일치시키기
+
+테스트 리소스/클래스패스 문제 없도록 JUnit4 + spring-test 의존성 포함
+
+STS에서 테스트 실행: NotificationConfigTest 우클릭 → Run As > JUnit Test

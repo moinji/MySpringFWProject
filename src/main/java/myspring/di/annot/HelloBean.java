@@ -31,7 +31,6 @@ public class HelloBean {
 	public HelloBean() {
 		System.out.println(this.getClass().getName() + " 생성자가 호출됨");
 	}
-	
 //전략2 - constructor injection
 //	@Autowired
 //	public HelloBean(
